@@ -1,0 +1,10 @@
+Carina Picker Android - Codemagic Ready
+
+Build workflow: android-debug-apk
+Output APK: app/build/outputs/apk/debug/app-debug.apk
+Build type: Debug APK (installable, no custom keystore required)
+Java: 17
+Android Gradle Plugin: 9.2.0
+Gradle used by cloud build: 9.4.1
+compileSdk: 36
+minSdk: 24

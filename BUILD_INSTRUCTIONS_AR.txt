@@ -1,0 +1,11 @@
+Carina Picker Android - Build Instructions
+
+1) افتح Android Studio.
+2) اختر Open وافتح فولدر CarinaPickerAndroid.
+3) لو Android Studio طلب Gradle version استخدم Gradle 9.4.1.
+4) تأكد أن JDK = 17 وأن Android SDK 36 مثبت.
+5) اعمل Gradle Sync.
+6) وصل جهاز Android وفعل USB Debugging ثم Run app.
+7) لعمل APK: Build > Generate App Bundles or APKs > Generate APKs.
+
+ملاحظة: المشروع لا يحتاج أي مكتبات خارجية للـBarcode Scanner إذا كان جهاز الـHandheld يرسل القراءة كKeyboard + Enter.
