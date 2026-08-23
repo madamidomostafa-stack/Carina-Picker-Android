@@ -1,21 +1,3 @@
 plugins {
     id 'com.android.application' version '9.2.0' apply false
 }
-
-android {
-    namespace 'com.carina.picker'
-    compileSdk 36
-
-    defaultConfig {
-        applicationId 'com.carina.picker'
-        minSdk 24
-        targetSdk 36
-        versionCode 7
-        versionName '0.6.2'
-    }
-
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
-    }
-}
