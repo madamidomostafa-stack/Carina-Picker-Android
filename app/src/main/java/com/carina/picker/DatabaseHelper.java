@@ -16,7 +16,7 @@ import java.util.Set;
 
 final class DatabaseHelper extends SQLiteOpenHelper {
     static final String DB_NAME = "carina_picker.db";
-    private static final int DB_VERSION = 2;
+    private static final int DB_VERSION = 1;
 
     DatabaseHelper(Context context) { super(context, DB_NAME, null, DB_VERSION); }
 
@@ -36,7 +36,7 @@ final class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL("CREATE TABLE exceptions_log (id INTEGER PRIMARY KEY AUTOINCREMENT," +
                 "date_text TEXT,time_text TEXT,order_no TEXT,branch TEXT,location TEXT,sku TEXT," +
                 "required_qty INTEGER,picked_qty INTEGER,damage_qty INTEGER,not_found_qty INTEGER," +
-                "exception_qty INTEGER NOT NULL DEFAULT 0,reason TEXT,final_status TEXT,line_seq INTEGER)");
+                "reason TEXT,final_status TEXT,line_seq INTEGER)");
         db.execSQL("CREATE TABLE settings (key_name TEXT PRIMARY KEY, value_text TEXT)");
         setSetting(db, "picker_started", "NO");
         setSetting(db, "current_id", "0");
@@ -46,11 +46,7 @@ final class DatabaseHelper extends SQLiteOpenHelper {
         setSetting(db, "order_start_ms", "0");
     }
 
-    @Override public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        if (oldVersion < 2) {
-            db.execSQL("ALTER TABLE exceptions_log ADD COLUMN exception_qty INTEGER NOT NULL DEFAULT 0");
-        }
-    }
+    @Override public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) { }
 
     void insertImportedLines(List<Models.PickLine> lines) {
         SQLiteDatabase db = getWritableDatabase();
@@ -167,15 +163,14 @@ final class DatabaseHelper extends SQLiteOpenHelper {
         Models.PickLine now = line(l.id); if (now == null) now = l;
         ContentValues cv = baseLog(now);
         cv.put("action", action); cv.put("action_qty", actionQty); cv.put("status", buildStatus(now));
-        getWritableDatabase().insertOrThrow("pick_log", null, cv);
+        getWritableDatabase().insert("pick_log", null, cv);
     }
 
     void writeException(Models.PickLine l, int qty, String reason) {
         Models.PickLine now = line(l.id); if (now == null) now = l;
         ContentValues cv = baseLog(now);
-        cv.put("exception_qty", qty);
         cv.put("reason", reason); cv.put("final_status", buildStatus(now)); cv.put("line_seq", now.seq);
-        getWritableDatabase().insertOrThrow("exceptions_log", null, cv);
+        getWritableDatabase().insert("exceptions_log", null, cv);
     }
 
     private ContentValues baseLog(Models.PickLine l) {
@@ -207,57 +202,6 @@ final class DatabaseHelper extends SQLiteOpenHelper {
             while(c.moveToNext()) out.add(fromCursor(c));
         }
         return out;
-    }
-
-    List<String[]> pickDataRows() {
-        List<String[]> out = new ArrayList<>();
-        String sql = "SELECT seq,order_no,branch,location,sku,qty,picked,damage,not_found,status " +
-                "FROM pick_data ORDER BY seq";
-        try (Cursor c = getReadableDatabase().rawQuery(sql, null)) {
-            while (c.moveToNext()) {
-                out.add(new String[]{
-                        c.getString(0), c.getString(1), c.getString(2), c.getString(3), c.getString(4),
-                        c.getString(5), c.getString(6), c.getString(7), c.getString(8), c.getString(9)
-                });
-            }
-        }
-        return out;
-    }
-
-    List<String[]> pickLogRows(int limit) {
-        List<String[]> out = new ArrayList<>();
-        String sql = "SELECT date_text,time_text,order_no,branch,location,sku,action,action_qty," +
-                "required_qty,picked_qty,damage_qty,not_found_qty,status " +
-                "FROM pick_log ORDER BY id DESC LIMIT " + Math.max(1, limit);
-        try (Cursor c = getReadableDatabase().rawQuery(sql, null)) {
-            while (c.moveToNext()) {
-                String[] row = new String[13];
-                for (int i = 0; i < row.length; i++) row[i] = c.isNull(i) ? "" : c.getString(i);
-                out.add(row);
-            }
-        }
-        return out;
-    }
-
-    List<String[]> exceptionRows(int limit) {
-        List<String[]> out = new ArrayList<>();
-        String sql = "SELECT date_text,time_text,order_no,branch,location,sku,required_qty,picked_qty," +
-                "damage_qty,not_found_qty,exception_qty,reason,final_status,line_seq " +
-                "FROM exceptions_log ORDER BY id DESC LIMIT " + Math.max(1, limit);
-        try (Cursor c = getReadableDatabase().rawQuery(sql, null)) {
-            while (c.moveToNext()) {
-                String[] row = new String[14];
-                for (int i = 0; i < row.length; i++) row[i] = c.isNull(i) ? "" : c.getString(i);
-                out.add(row);
-            }
-        }
-        return out;
-    }
-
-    int tableCount(String table) {
-        try (Cursor c = getReadableDatabase().rawQuery("SELECT COUNT(*) FROM " + table, null)) {
-            return c.moveToFirst() ? c.getInt(0) : 0;
-        }
     }
 
     String dumpTable(String table, int limit) {
