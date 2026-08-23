@@ -1,0 +1,25 @@
+Carina Picker Android V0.4.0
+
+تمت مراجعة PICK DATA / PICK LOG / EXCEPTIONS LOG.
+
+PICK DATA:
+- جدول مسطر بحدود واضحة.
+- أسماء الأعمدة ظاهرة.
+- Horizontal scroll للشاشات الصغيرة.
+- صفوف متبادلة اللون لسهولة القراءة.
+- الأعمدة: Line, Order Number, Branch, Location, SKU, Required, Picked, Damage, Not Found, Status.
+
+PICK LOG:
+- تم إلغاء عرض dump النصي القديم.
+- القراءة الآن مباشرة من SQLite في جدول.
+- تسجيل LOCATION CONFIRMED / SKU PICK / DAMAGE / NOT FOUND.
+- يظهر عدد السجلات أعلى الشاشة.
+
+EXCEPTIONS LOG:
+- القراءة مباشرة من SQLite في جدول.
+- إضافة عمود Exception Qty.
+- Damage يسجل Qty=1 لكل قطعة.
+- Not Found يسجل الكمية المتبقية.
+- ترقية قاعدة البيانات من Version 1 إلى Version 2 بدون حذف البيانات القديمة.
+
+الإصدار: 0.4.0
