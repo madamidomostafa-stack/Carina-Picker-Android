@@ -1,0 +1,18 @@
+Carina Picker Android V0.6.2
+
+SOUND FIX
+- ملفات الصوت موجودة فعلياً داخل app/src/main/res/raw
+- scan_ok.wav = Correct Location/SKU
+- scan_error.mp3 = Wrong Location/SKU
+- order_complete.wav = Order Complete
+- MediaPlayer يستخدم STREAM_MUSIC وبأعلى Volume داخل التطبيق
+- زر TEST SOUNDS داخل Settings لاختبار الثلاثة أصوات
+
+RESOLUTION FIX
+- Target minimum: SUNMI L2K 480x800 / Android 7.1.2
+- تقليل Header وNavigation
+- ضغط Picking Screen مع Safety Margin أسفل الشاشة
+- Picking بدون Vertical Scroll
+- Order Complete بدون Vertical Scroll
+- Safety Margin إضافي أسفل Order Complete
+- ما زال Responsive للأجهزة الأكبر
