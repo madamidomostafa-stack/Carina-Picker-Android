@@ -1,6 +1,8 @@
 package com.carina.picker;
 
+import android.util.DisplayMetrics;
 import android.media.MediaPlayer;
+import android.media.AudioManager;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
@@ -62,6 +64,29 @@ public class MainActivity extends Activity {
     @Override protected void onResume() { super.onResume(); timerHandler.removeCallbacks(timerTick); timerHandler.post(timerTick); }
     @Override protected void onPause() { super.onPause(); timerHandler.removeCallbacks(timerTick); }
 
+    private int usableScreenHeightDp(){
+        DisplayMetrics dm=getResources().getDisplayMetrics();
+        float d=dm.density<=0?1f:dm.density;
+        int total=Math.round(dm.heightPixels/d);
+
+        int status=0;
+        int nav=0;
+        int statusId=getResources().getIdentifier("status_bar_height","dimen","android");
+        if(statusId>0) status=Math.round(getResources().getDimensionPixelSize(statusId)/d);
+        int navId=getResources().getIdentifier("navigation_bar_height","dimen","android");
+        if(navId>0) nav=Math.round(getResources().getDimensionPixelSize(navId)/d);
+
+        int usable=total-status-nav;
+        return Math.max(520,usable);
+    }
+
+    private int scaledDp(float fraction,int minDp,int maxDp){
+        int v=Math.round(usableScreenHeightDp()*fraction);
+        if(v<minDp)v=minDp;
+        if(v>maxDp)v=maxDp;
+        return v;
+    }
+
     private void buildShell() {
         root=new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
@@ -70,7 +95,7 @@ public class MainActivity extends Activity {
         TextView title=text("CARINA PICKER - ANDROID",17,Color.WHITE,true);
         title.setGravity(Gravity.CENTER);
         title.setBackgroundColor(NAVY);
-        root.addView(title,new LinearLayout.LayoutParams(-1,dp(36)));
+        root.addView(title,new LinearLayout.LayoutParams(-1,dp(scaledDp(0.055f,34,42))));
 
         HorizontalScrollView hsv=new HorizontalScrollView(this);
         hsv.setHorizontalScrollBarEnabled(false);
@@ -85,7 +110,7 @@ public class MainActivity extends Activity {
         addNav(nav,"SETTINGS",v->showSettings());
         addNav(nav,"HELP",v->showHelp());
         hsv.addView(nav);
-        root.addView(hsv,new LinearLayout.LayoutParams(-1,dp(32)));
+        root.addView(hsv,new LinearLayout.LayoutParams(-1,dp(scaledDp(0.048f,30,36))));
 
         body=new FrameLayout(this);
         root.addView(body,new LinearLayout.LayoutParams(-1,0,1));
@@ -99,7 +124,7 @@ public class MainActivity extends Activity {
         b.setPadding(dp(1),0,dp(1),0);
         b.setMinHeight(0); b.setMinimumHeight(0);
         b.setOnClickListener(l);
-        nav.addView(b,new LinearLayout.LayoutParams(dp(88),dp(32)));
+        nav.addView(b,new LinearLayout.LayoutParams(dp(88),dp(scaledDp(0.048f,30,36))));
     }
     private void clear(){
         body.removeAllViews();
@@ -162,42 +187,53 @@ public class MainActivity extends Activity {
     private void showPicking(){
         clearFixed();
 
+        int titleH=scaledDp(0.060f,34,42);
+        int identityH=scaledDp(0.120f,70,86);
+        int infoH=scaledDp(0.055f,30,38);
+        int locationH=scaledDp(0.100f,58,72);
+        int skuH=scaledDp(0.100f,58,72);
+        int qtyH=scaledDp(0.105f,62,76);
+        int scanH=scaledDp(0.125f,72,90);
+        int statusH=scaledDp(0.065f,38,48);
+        int actionH=scaledDp(0.075f,42,52);
+        int resetH=scaledDp(0.075f,42,52);
+
         TextView pickTitle=text("PICKER - ORDER PICKING",14,Color.WHITE,true);
         pickTitle.setGravity(Gravity.CENTER);
         pickTitle.setBackgroundColor(NAVY);
-        content.addView(pickTitle,weighted(0.065f));
+        content.addView(pickTitle,new LinearLayout.LayoutParams(-1,dp(titleH)));
 
         LinearLayout identityRow=new LinearLayout(this);
         identityRow.setOrientation(LinearLayout.HORIZONTAL);
-        orderText=responsiveCard(identityRow,"ORDER NUMBER",0.30f,16,NAVY);
-        branchText=responsiveCard(identityRow,"BRANCH",0.40f,15,NAVY);
-        progressText=responsiveCard(identityRow,"ORDER PROGRESS",0.30f,14,NAVY);
-        content.addView(identityRow,weighted(0.125f));
+        orderText=fixedCard(identityRow,"ORDER NUMBER",0.30f,16,NAVY,identityH);
+        branchText=fixedCard(identityRow,"BRANCH",0.40f,15,NAVY,identityH);
+        progressText=fixedCard(identityRow,"ORDER PROGRESS",0.30f,14,NAVY,identityH);
+        content.addView(identityRow,new LinearLayout.LayoutParams(-1,dp(identityH)));
 
         LinearLayout infoRow=new LinearLayout(this);
         infoRow.setOrientation(LinearLayout.HORIZONTAL);
-        elapsedText=responsiveMetric(infoRow,"ELAPSED",0.62f);
-        lineText=responsiveMetric(infoRow,"LINE",0.38f);
-        content.addView(infoRow,weighted(0.055f));
+        elapsedText=fixedMetric(infoRow,"ELAPSED",0.62f,infoH);
+        lineText=fixedMetric(infoRow,"LINE",0.38f,infoH);
+        content.addView(infoRow,new LinearLayout.LayoutParams(-1,dp(infoH)));
 
-        locationText=responsiveFullCard("NEXT LOCATION",18,Color.rgb(255,244,204),0.110f);
-        skuText=responsiveFullCard("CURRENT SKU",18,PALE,0.110f);
+        locationText=fixedFullCard("NEXT LOCATION",18,Color.rgb(255,244,204),locationH);
+        skuText=fixedFullCard("CURRENT SKU",18,PALE,skuH);
 
         LinearLayout qtyRow=new LinearLayout(this);
         qtyRow.setOrientation(LinearLayout.HORIZONTAL);
-        reqText=responsiveQty(qtyRow,"REQUIRED",Color.rgb(30,80,170));
-        pickedText=responsiveQty(qtyRow,"SCANNED",GREEN);
-        damageText=responsiveQty(qtyRow,"DAMAGE",RED);
-        nfText=responsiveQty(qtyRow,"NOT FOUND",ORANGE);
-        content.addView(qtyRow,weighted(0.105f));
+        reqText=fixedQty(qtyRow,"REQUIRED",Color.rgb(30,80,170),qtyH);
+        pickedText=fixedQty(qtyRow,"SCANNED",GREEN,qtyH);
+        damageText=fixedQty(qtyRow,"DAMAGE",RED,qtyH);
+        nfText=fixedQty(qtyRow,"NOT FOUND",ORANGE,qtyH);
+        content.addView(qtyRow,new LinearLayout.LayoutParams(-1,dp(qtyH)));
 
         LinearLayout scanBox=new LinearLayout(this);
         scanBox.setOrientation(LinearLayout.VERTICAL);
 
-        TextView scanLabel=text("SCAN BARCODE HERE",12,Color.rgb(90,50,0),true);
+        TextView scanLabel=text("SCAN BARCODE HERE",11,Color.rgb(90,50,0),true);
         scanLabel.setGravity(Gravity.CENTER);
         scanLabel.setBackgroundColor(Color.rgb(245,185,115));
-        scanBox.addView(scanLabel,new LinearLayout.LayoutParams(-1,0,0.34f));
+        scanBox.addView(scanLabel,new LinearLayout.LayoutParams(-1,dp(Math.max(26,Math.round(scanH*0.34f)))));
 
         scanInput=new EditText(this);
         scanInput.setSingleLine(true);
@@ -206,9 +242,10 @@ public class MainActivity extends Activity {
         scanInput.setBackgroundColor(Color.rgb(255,248,220));
         scanInput.setShowSoftInputOnFocus(false);
         scanInput.setPadding(dp(3),0,dp(3),0);
-        scanInput.setMinHeight(0); scanInput.setMinimumHeight(0);
-        scanBox.addView(scanInput,new LinearLayout.LayoutParams(-1,0,0.66f));
-        content.addView(scanBox,weighted(0.120f));
+        scanInput.setMinHeight(0);
+        scanInput.setMinimumHeight(0);
+        scanBox.addView(scanInput,new LinearLayout.LayoutParams(-1,0,1));
+        content.addView(scanBox,new LinearLayout.LayoutParams(-1,dp(scanH)));
 
         scanInput.setOnEditorActionListener((v,a,e)->{
             if(a==EditorInfo.IME_ACTION_DONE || (e!=null&&e.getKeyCode()==KeyEvent.KEYCODE_ENTER)){
@@ -223,44 +260,132 @@ public class MainActivity extends Activity {
             return false;
         });
 
-        statusText=text("PRESS START PICKING",12,NAVY,true);
+        statusText=text("PRESS START PICKING",11,NAVY,true);
         statusText.setGravity(Gravity.CENTER);
         statusText.setSingleLine(true);
         statusText.setEllipsize(android.text.TextUtils.TruncateAt.END);
         statusText.setBackgroundColor(PALE);
-        content.addView(statusText,weighted(0.060f));
+        content.addView(statusText,new LinearLayout.LayoutParams(-1,dp(statusH)));
 
         LinearLayout actions=new LinearLayout(this);
         actions.setOrientation(LinearLayout.HORIZONTAL);
+
         Button nf=compactAction("NOT FOUND",ORANGE);
         nf.setOnClickListener(v->notFound());
         Button dmg=compactAction("DAMAGE",RED);
         dmg.setOnClickListener(v->beginDamage());
+
         actions.addView(nf,new LinearLayout.LayoutParams(0,-1,1));
         actions.addView(dmg,new LinearLayout.LayoutParams(0,-1,1));
-        content.addView(actions,weighted(0.070f));
+        content.addView(actions,new LinearLayout.LayoutParams(-1,dp(actionH)));
 
         Button reset=compactAction("RESET SESSION",Color.DKGRAY);
         reset.setOnClickListener(v->confirm("Reset current picking session?",()->{
-            db.resetSession(); current=null; showControl();
+            db.resetSession();
+            current=null;
+            showControl();
         }));
-        content.addView(reset,weighted(0.075f));
-
-        // Safety margin for Android navigation/status areas on 480x800 devices.
-        content.addView(new android.view.View(this),weighted(0.105f));
+        content.addView(reset,new LinearLayout.LayoutParams(-1,dp(resetH)));
 
         long id=db.getSettingLong("current_id");
         if(id>0){
             Models.PickLine x=db.line(id);
-            if(x!=null&&!x.complete())current=x;
+            if(x!=null&&!x.complete()) current=x;
         }
+
         if(current!=null){
             renderCurrent();
             setStatus(currentGuidance(),NAVY,PALE);
         }else{
             setStatus("PRESS START PICKING",NAVY,PALE);
         }
+
         focusScanner();
+    }
+
+    private TextView fixedCard(LinearLayout parent,String label,float weight,float valueSp,int valueColor,int totalH){
+        LinearLayout box=new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+
+        int header=Math.max(24,Math.round(totalH*0.34f));
+
+        TextView h=text(label,8,Color.WHITE,true);
+        h.setGravity(Gravity.CENTER);
+        h.setSingleLine(true);
+        h.setBackgroundColor(NAVY);
+
+        TextView v=text("-",valueSp,valueColor,true);
+        v.setGravity(Gravity.CENTER);
+        v.setMaxLines(2);
+        v.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        v.setBackgroundColor(Color.rgb(241,246,252));
+
+        box.addView(h,new LinearLayout.LayoutParams(-1,dp(header)));
+        box.addView(v,new LinearLayout.LayoutParams(-1,0,1));
+
+        LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,dp(totalH),weight);
+        lp.setMargins(dp(1),dp(1),dp(1),dp(1));
+        parent.addView(box,lp);
+        return v;
+    }
+
+    private TextView fixedMetric(LinearLayout parent,String label,float weight,int totalH){
+        TextView v=text(label+": -",10,NAVY,true);
+        v.setGravity(Gravity.CENTER);
+        v.setSingleLine(true);
+        v.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        v.setBackgroundColor(Color.rgb(246,249,252));
+        LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,dp(totalH),weight);
+        lp.setMargins(dp(1),dp(1),dp(1),dp(1));
+        parent.addView(v,lp);
+        return v;
+    }
+
+    private TextView fixedFullCard(String label,float valueSp,int bg,int totalH){
+        LinearLayout box=new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+
+        int header=Math.max(24,Math.round(totalH*0.40f));
+
+        TextView h=text(label,8,Color.WHITE,true);
+        h.setGravity(Gravity.CENTER);
+        h.setSingleLine(true);
+        h.setBackgroundColor(NAVY);
+
+        TextView v=text("-",valueSp,NAVY,true);
+        v.setGravity(Gravity.CENTER);
+        v.setSingleLine(true);
+        v.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        v.setBackgroundColor(bg);
+
+        box.addView(h,new LinearLayout.LayoutParams(-1,dp(header)));
+        box.addView(v,new LinearLayout.LayoutParams(-1,0,1));
+        content.addView(box,new LinearLayout.LayoutParams(-1,dp(totalH)));
+        return v;
+    }
+
+    private TextView fixedQty(LinearLayout parent,String label,int color,int totalH){
+        LinearLayout box=new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+
+        int header=Math.max(26,Math.round(totalH*0.43f));
+
+        TextView h=text(label,8,Color.WHITE,true);
+        h.setGravity(Gravity.CENTER);
+        h.setMaxLines(2);
+        h.setBackgroundColor(NAVY);
+
+        TextView v=text("-",15,color,true);
+        v.setGravity(Gravity.CENTER);
+        v.setBackgroundColor(Color.rgb(246,249,252));
+
+        box.addView(h,new LinearLayout.LayoutParams(-1,dp(header)));
+        box.addView(v,new LinearLayout.LayoutParams(-1,0,1));
+
+        LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,dp(totalH),1);
+        lp.setMargins(dp(1),dp(1),dp(1),dp(1));
+        parent.addView(box,lp);
+        return v;
     }
 
     private LinearLayout.LayoutParams weighted(float weight){
@@ -419,64 +544,73 @@ public class MainActivity extends Activity {
         playOrderComplete();
         clearFixed();
 
-        TextView title=text("ORDER COMPLETE",16,Color.WHITE,true);
+        int titleH=scaledDp(0.060f,34,42);
+        int successH=scaledDp(0.060f,34,42);
+        int idH=scaledDp(0.120f,70,84);
+        int qtyH=scaledDp(0.135f,78,92);
+        int statusH=scaledDp(0.105f,62,76);
+        int detailH=scaledDp(0.100f,58,72);
+        int msgH=scaledDp(0.070f,40,50);
+        int okH=scaledDp(0.080f,44,56);
+
+        TextView title=text("ORDER COMPLETE",15,Color.WHITE,true);
         title.setGravity(Gravity.CENTER);
         title.setBackgroundColor(NAVY);
-        content.addView(title,weighted(0.070f));
+        content.addView(title,new LinearLayout.LayoutParams(-1,dp(titleH)));
 
         TextView success=text("ORDER COMPLETED SUCCESSFULLY!",13,GREEN,true);
         success.setGravity(Gravity.CENTER);
         success.setSingleLine(true);
         success.setBackgroundColor(Color.rgb(238,250,240));
-        content.addView(success,weighted(0.065f));
+        content.addView(success,new LinearLayout.LayoutParams(-1,dp(successH)));
 
         LinearLayout idRow=new LinearLayout(this);
         idRow.setOrientation(LinearLayout.HORIZONTAL);
-        completeInfoCard(idRow,"ORDER NUMBER",s.orderNo,0.32f,14,NAVY);
-        completeInfoCard(idRow,"BRANCH",s.branch,0.43f,13,NAVY);
-        completeInfoCard(idRow,"PICKER","Mohamed Mostafa",0.25f,11,NAVY);
-        content.addView(idRow,weighted(0.130f));
+        completeInfoCardFixed(idRow,"ORDER NUMBER",s.orderNo,0.32f,14,NAVY,idH);
+        completeInfoCardFixed(idRow,"BRANCH",s.branch,0.43f,13,NAVY,idH);
+        completeInfoCardFixed(idRow,"PICKER","Mohamed Mostafa",0.25f,11,NAVY,idH);
+        content.addView(idRow,new LinearLayout.LayoutParams(-1,dp(idH)));
 
         LinearLayout qtyRow=new LinearLayout(this);
         qtyRow.setOrientation(LinearLayout.HORIZONTAL);
-        completeQtyCard(qtyRow,"ORDER QTY",String.valueOf(s.required),Color.rgb(30,80,170));
-        completeQtyCard(qtyRow,"PICKED",String.valueOf(s.picked),GREEN);
-        completeQtyCard(qtyRow,"DAMAGE",String.valueOf(s.damage),ORANGE);
-        completeQtyCard(qtyRow,"NOT FOUND",String.valueOf(s.notFound),RED);
-        completeQtyCard(qtyRow,"COMPLETION",s.completionPct()+"%",GREEN);
-        content.addView(qtyRow,weighted(0.155f));
+        completeQtyCardFixed(qtyRow,"ORDER QTY",String.valueOf(s.required),Color.rgb(30,80,170),qtyH);
+        completeQtyCardFixed(qtyRow,"PICKED",String.valueOf(s.picked),GREEN,qtyH);
+        completeQtyCardFixed(qtyRow,"DAMAGE",String.valueOf(s.damage),ORANGE,qtyH);
+        completeQtyCardFixed(qtyRow,"NOT FOUND",String.valueOf(s.notFound),RED,qtyH);
+        completeQtyCardFixed(qtyRow,"COMPLETION",s.completionPct()+"%",GREEN,qtyH);
+        content.addView(qtyRow,new LinearLayout.LayoutParams(-1,dp(qtyH)));
 
         LinearLayout statusRow=new LinearLayout(this);
         statusRow.setOrientation(LinearLayout.HORIZONTAL);
-        completeInfoCard(statusRow,"STATUS",
+        completeInfoCardFixed(statusRow,"STATUS",
                 (s.damage==0 && s.notFound==0)?"COMPLETED":"WITH EXCEPTIONS",
-                0.52f,13,(s.damage==0 && s.notFound==0)?GREEN:ORANGE);
-        completeInfoCard(statusRow,"COMPLETION TIME",formatElapsed(s.elapsedMs),
-                0.48f,13,Color.rgb(30,80,170));
-        content.addView(statusRow,weighted(0.110f));
+                0.52f,13,(s.damage==0 && s.notFound==0)?GREEN:ORANGE,statusH);
+        completeInfoCardFixed(statusRow,"COMPLETION TIME",formatElapsed(s.elapsedMs),
+                0.48f,13,Color.rgb(30,80,170),statusH);
+        content.addView(statusRow,new LinearLayout.LayoutParams(-1,dp(statusH)));
 
         LinearLayout detailRow=new LinearLayout(this);
         detailRow.setOrientation(LinearLayout.HORIZONTAL);
-        completeInfoCard(detailRow,"TOTAL LINES",s.doneLines+" / "+s.totalLines,0.34f,12,NAVY);
-        completeInfoCard(detailRow,"PICKED QTY",String.valueOf(s.picked),0.33f,12,GREEN);
-        completeInfoCard(detailRow,"EXCEPTIONS",String.valueOf(s.damage+s.notFound),0.33f,12,RED);
-        content.addView(detailRow,weighted(0.100f));
+        completeInfoCardFixed(detailRow,"TOTAL LINES",s.doneLines+" / "+s.totalLines,0.34f,12,NAVY,detailH);
+        completeInfoCardFixed(detailRow,"PICKED QTY",String.valueOf(s.picked),0.33f,12,GREEN,detailH);
+        completeInfoCardFixed(detailRow,"EXCEPTIONS",String.valueOf(s.damage+s.notFound),0.33f,12,RED,detailH);
+        content.addView(detailRow,new LinearLayout.LayoutParams(-1,dp(detailH)));
 
         TextView msg=text(
                 (s.damage==0 && s.notFound==0)
                         ?"COMPLETED SUCCESSFULLY - ALL PIECES PICKED"
                         :"COMPLETED WITH EXCEPTIONS",
-                11,
+                10,
                 (s.damage==0 && s.notFound==0)?GREEN:ORANGE,
                 true);
         msg.setGravity(Gravity.CENTER);
         msg.setSingleLine(true);
         msg.setEllipsize(android.text.TextUtils.TruncateAt.END);
         msg.setBackgroundColor(Color.rgb(242,248,242));
-        content.addView(msg,weighted(0.075f));
+        content.addView(msg,new LinearLayout.LayoutParams(-1,dp(msgH)));
 
         Button done=compactAction("OK",GREEN);
-        done.setTextSize(14);
+        done.setTextSize(13);
         done.setOnClickListener(v->{
             Models.PickLine next=db.firstOpenExcludingOrder(orderNo);
             if(next!=null){
@@ -488,10 +622,57 @@ public class MainActivity extends Activity {
                 finishAll();
             }
         });
-        content.addView(done,weighted(0.095f));
+        content.addView(done,new LinearLayout.LayoutParams(-1,dp(okH)));
+    }
 
-        // ORDER COMPLETE bottom safety margin for 480x800 handhelds.
-        content.addView(new android.view.View(this),weighted(0.200f));
+    private TextView completeInfoCardFixed(LinearLayout parent,String label,String value,float weight,float valueSp,int valueColor,int totalH){
+        LinearLayout box=new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+
+        int header=Math.max(24,Math.round(totalH*0.34f));
+
+        TextView h=text(label,7,Color.WHITE,true);
+        h.setGravity(Gravity.CENTER);
+        h.setSingleLine(true);
+        h.setBackgroundColor(NAVY);
+
+        TextView v=text(value==null?"":value,valueSp,valueColor,true);
+        v.setGravity(Gravity.CENTER);
+        v.setMaxLines(2);
+        v.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        v.setBackgroundColor(Color.rgb(246,249,252));
+
+        box.addView(h,new LinearLayout.LayoutParams(-1,dp(header)));
+        box.addView(v,new LinearLayout.LayoutParams(-1,0,1));
+
+        LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,dp(totalH),weight);
+        lp.setMargins(dp(1),dp(1),dp(1),dp(1));
+        parent.addView(box,lp);
+        return v;
+    }
+
+    private void completeQtyCardFixed(LinearLayout parent,String label,String value,int valueColor,int totalH){
+        LinearLayout box=new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+
+        int header=Math.max(26,Math.round(totalH*0.42f));
+
+        TextView h=text(label,7,Color.WHITE,true);
+        h.setGravity(Gravity.CENTER);
+        h.setMaxLines(2);
+        h.setBackgroundColor(NAVY);
+
+        TextView v=text(value,14,valueColor,true);
+        v.setGravity(Gravity.CENTER);
+        v.setSingleLine(true);
+        v.setBackgroundColor(Color.rgb(246,249,252));
+
+        box.addView(h,new LinearLayout.LayoutParams(-1,dp(header)));
+        box.addView(v,new LinearLayout.LayoutParams(-1,0,1));
+
+        LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,dp(totalH),1);
+        lp.setMargins(dp(1),dp(1),dp(1),dp(1));
+        parent.addView(box,lp);
     }
 
     private TextView completeInfoCard(LinearLayout parent,String label,String value,float weight,float valueSp,int valueColor){
@@ -670,21 +851,49 @@ public class MainActivity extends Activity {
     }
 
     private void testSounds(){
+        setStatusMessageForTest("TEST: CORRECT BEEP");
         playScanOk();
-        new android.os.Handler().postDelayed(this::playScanError,500);
-        new android.os.Handler().postDelayed(this::playOrderComplete,1200);
+        new Handler().postDelayed(()->{
+            setStatusMessageForTest("TEST: ERROR SOUND");
+            playScanError();
+        },700);
+        new Handler().postDelayed(()->{
+            setStatusMessageForTest("TEST: ORDER COMPLETE");
+            playOrderComplete();
+        },1800);
     }
 
-    private void showSettings(){clear();header("SETTINGS");content.addView(text("Mode: Single device / Offline\nDatabase: SQLite\nScanner: Hardware keyboard-wedge barcode reader\nImport: CSV or XLSX first worksheet\nRequired columns: Order Number | Branch | SKU | QTY | Location",15,Color.DKGRAY,false),matchWrap());}
-    private void showHelp(){clear();header("HELP");content.addView(text("1. Import a CSV/XLSX pick file.\n2. Press START / RESUME PICKING.\n3. Scan Location.\n4. Scan SKU piece by piece.\n5. Use DAMAGE then scan the damaged SKU.\n6. Use NOT FOUND to classify all remaining units.\n7. The Order Complete screen appears automatically.\n\nData is stored locally on this Android device.",15,Color.DKGRAY,false),matchWrap());}
+    private void setStatusMessageForTest(String msg){
+        Toast.makeText(this,msg,Toast.LENGTH_SHORT).show();
+    }
 
-    private void compactHeader(String s){
-        TextView h=text(s,16,Color.WHITE,true); h.setGravity(Gravity.CENTER); h.setBackgroundColor(NAVY); h.setPadding(4,7,4,7);
-        content.addView(h,new LinearLayout.LayoutParams(-1,dp(38)));
+    private void showSettings(){
+        clear();
+        header("SETTINGS");
+
+        TextView info=text("SOUND SETTINGS",15,NAVY,true);
+        info.setGravity(Gravity.CENTER);
+        info.setPadding(dp(4),dp(8),dp(4),dp(8));
+        content.addView(info,matchWrap());
+
+        TextView details=text(
+                "Correct Location/SKU: short beep\n"+
+                "Wrong Location/SKU: error sound\n"+
+                "Order Complete: completion sound\n\n"+
+                "Keep the scanner hardware beep disabled.",
+                13,Color.DKGRAY,false);
+        details.setPadding(dp(8),dp(8),dp(8),dp(12));
+        content.addView(details,matchWrap());
 
         Button testSound=button("TEST SOUNDS",NAVY);
         testSound.setOnClickListener(v->testSounds());
         content.addView(testSound,buttonLp());
+
+        TextView note=text(
+                "If you cannot hear the test, increase Android Media volume.",
+                12,Color.DKGRAY,false);
+        note.setPadding(dp(8),dp(12),dp(8),dp(8));
+        content.addView(note,matchWrap());
     }
 
     private TextView handheldCard(LinearLayout parent,String label,float weight,float valueSize,int maxLines){
@@ -733,22 +942,33 @@ public class MainActivity extends Activity {
     private void addSummary(String k,String v){LinearLayout r=new LinearLayout(this);r.setOrientation(LinearLayout.HORIZONTAL);TextView a=text(k,14,NAVY,true);TextView b=text(v,16,Color.BLACK,true);r.addView(a,new LinearLayout.LayoutParams(0,dp(44),1));r.addView(b,new LinearLayout.LayoutParams(0,dp(44),1));content.addView(r,matchWrap());}
     private void playAppSound(int resId){
         try{
+            AudioManager am=(AudioManager)getSystemService(AUDIO_SERVICE);
+            if(am!=null){
+                int current=am.getStreamVolume(AudioManager.STREAM_MUSIC);
+                if(current==0){
+                    Toast.makeText(this,"Media volume is muted",Toast.LENGTH_SHORT).show();
+                }
+            }
+
             final MediaPlayer mp=MediaPlayer.create(this,resId);
-            if(mp==null)return;
+            if(mp==null){
+                Toast.makeText(this,"Unable to load sound",Toast.LENGTH_SHORT).show();
+                return;
+            }
 
-            mp.setAudioStreamType(android.media.AudioManager.STREAM_MUSIC);
             mp.setVolume(1.0f,1.0f);
-
-            mp.setOnCompletionListener(x->{
-                try{x.release();}catch(Exception ignored){}
+            mp.setOnCompletionListener(player->{
+                try{player.release();}catch(Exception ignored){}
             });
-            mp.setOnErrorListener((x,w,e)->{
-                try{x.release();}catch(Exception ignored){}
+            mp.setOnErrorListener((player,what,extra)->{
+                try{player.release();}catch(Exception ignored){}
+                Toast.makeText(this,"Sound playback error",Toast.LENGTH_SHORT).show();
                 return true;
             });
-
             mp.start();
-        }catch(Exception ignored){}
+        }catch(Exception ex){
+            Toast.makeText(this,"Sound error: "+ex.getClass().getSimpleName(),Toast.LENGTH_SHORT).show();
+        }
     }
     private void playScanOk(){playAppSound(R.raw.scan_ok);}
     private void playScanError(){playAppSound(R.raw.scan_error);}
